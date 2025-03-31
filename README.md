@@ -1,7 +1,9 @@
 # Eksamensprojekt-Programmering-B
 ## Opgave fordeling
 Game logic: Halfdan
+
 GUI: Emre
+
 Networking: Tobias
 
 ## Links til libraries
