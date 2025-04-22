@@ -29,7 +29,7 @@ def load_images():
 # Draw the chessboard
 def draw_board(win):
     for row in range(ROWS):
-        for col in range(COLS):
+        for col in range(COLS): 
             color = WHITE if (row + col) % 2 == 0 else BROWN
             pygame.draw.rect(win, color, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
