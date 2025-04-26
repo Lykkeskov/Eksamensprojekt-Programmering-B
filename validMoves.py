@@ -1,6 +1,10 @@
-# valid moves in tuples, so (col, row)
-# takes the following: what piece, the current location and the 8x8 list that is the board
-def valid_moves(piece, col, row, board):
+import copy
+
+# short for "valid moves without check"
+# is like valid_moves(), but does not call is_in_check() recursively
+# recursive is when "a function calls itself to solve a problem, breaking it down into smaller, manageable subproblems"
+# wow such fancy wording
+def vmwc(piece, col, row, board):
     moves = [] # list for storing legal moves
     color, kind = piece.split('_') # splits the name of the piece into color and kind
 
@@ -14,11 +18,10 @@ def valid_moves(piece, col, row, board):
         start_row = 6 if color == "w" else 1 # used to allow it to move 2 slots on first move
 
         # Movement (1 slot forward if its empty). checks if square_in_grid to avoid indexing errors
-        if square_in_grid(col, row + direction) and board[row + 2 * direction][col] is None:
+        if square_in_grid(col, row + direction) and board[row + direction][col] is None:
             moves.append((col, row + direction))
             # Ability to move 2 slots first time (checks if start_row and if next anf second next slots are empty)
-            if row == start_row and board[row + 2 * direction][col] is None and board[row + 2 * direction][col] is None:
-                if square_in_grid(col, row + 2 * direction):
+            if row == start_row and board[row + 2 * direction][col] is None:
                     moves.append((col, row + 2 * direction))
 
         # kill/capture rules (diagonal, one slot)
@@ -40,7 +43,7 @@ def valid_moves(piece, col, row, board):
         for dx, dy in possible_moves:
             new_col, new_row = col + dx, row + dy
             # Check if new pos is a valid slot, if so then set target
-            if square_in_grid(new_col, new_row):
+            if square_in_grid(new_row, new_col):
                 target = board[new_col][new_row]
                 if target is None or target[0] != color:
                     moves.append((new_col, new_row))
@@ -83,4 +86,91 @@ def valid_moves(piece, col, row, board):
                     break
                 else:
                     break
+
     return moves
+
+
+# here we use the copy library that we imported at the start
+def would_cause_check(piece, col, row, move, board):
+    simulated_board = copy.deepcopy(board)
+
+    new_col, new_row = move
+    simulated_board[row][col] = None
+    simulated_board[new_col][new_row] = piece
+    color, _ = piece.split('_')
+
+    # find the kings position
+    king_pos = None # set it to none by default
+    for r in range(8):
+        for c in range(8):
+            current_piece = simulated_board[r][c]
+            if simulated_board[r][c] == f"{color}_king": # if the dude is on the board
+                king_pos = (r, c) # we get his location (fbi type beat)
+                break
+        if king_pos:
+            break
+    if not king_pos:
+        return True # oh no, king is missing
+
+    king_col, king_row = king_pos
+
+    for r in range(8):
+        for c in range(8):
+            enemy_piece = simulated_board[r][c]
+            if enemy_piece and enemy_piece[0] != color:
+                enemy_moves = vmwc(enemy_piece, col, row, simulated_board)
+                if (king_col, king_row) in enemy_moves: #checks in enemy_moves attach the king
+                    return True
+    return False
+
+
+def valid_moves(piece, col, row, board):
+    moves = vmwc(piece, col, row, board)
+    legal_moves = []
+    for move in moves:
+        if not would_cause_check(piece, col, row, move, board):
+            legal_moves.append(move)
+    return legal_moves
+
+
+
+def in_check(board, color):
+    # first find the king
+    king_pos = None # set it to none by default
+    for r in range(8):
+        for c in range(8):
+            if board[r][c] == f"{color}_king": # if the dude is on the board
+                king_pos = (r, c) # we get his location (fbi type beat)
+                break
+        if king_pos:
+            break
+    if not king_pos:
+        return True
+
+    enemy_color = 'b' if color == 'w' else 'w' # set the color of enemy to opposite of one self
+
+    # check all enemy pieces
+    for r in range(8):
+        for c in range(8):
+            piece = board[r][c]
+            if piece and piece[0] == enemy_color:
+                moves = vmwc(piece, c, r, board)
+                if king_pos in moves:
+                    return True
+    return False
+
+
+# short for checkmate or stalemate
+def cm_or_sm(board, color):
+    # if there's no legal moves for any piece
+    for row in range(8):
+        for col in range(8):
+            piece = board[row][col]
+            if piece and piece[0] == color:
+                if valid_moves(piece, col, row, board):
+                    return None # still aint no legal moved
+
+    if in_check(color, board):
+        return "checkmate"
+    else:
+        return "stalemate"
