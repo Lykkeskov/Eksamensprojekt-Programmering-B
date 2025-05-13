@@ -1,5 +1,8 @@
 import pygame
 import os
+import sys
+from points import addPoints
+
 
 #Initialize Pygame
 pygame.init()
@@ -113,6 +116,7 @@ def main():
     selected_square = None
 
     while running:
+        # addPoints() will uncomment when function is done
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False

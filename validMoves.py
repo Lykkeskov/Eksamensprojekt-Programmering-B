@@ -168,7 +168,7 @@ def cm_or_sm(board, color):
             piece = board[row][col]
             if piece and piece[0] == color:
                 if valid_moves(piece, col, row, board):
-                    return None # still aint no legal moved
+                    return None # still no legal moves
 
     if in_check(color, board):
         return "checkmate"
