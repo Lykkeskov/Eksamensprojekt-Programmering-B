@@ -1,22 +1,22 @@
 import pygame
 import os
 
-# Initialize Pygame
+#Initialize Pygame
 pygame.init()
 
-# Constants
+#Constants
 WIDTH, HEIGHT = 512, 512
 ROWS, COLS = 8, 8
 SQUARE_SIZE = WIDTH // COLS
 
-# Colors
+#Colors
 WHITE = (238, 238, 210)
 BROWN = (118, 150, 86)
 HIGHLIGHT_GREEN = (0, 255, 0, 100)
 HIGHLIGHT_RED = (255, 0, 0, 100)
 HIGHLIGHT_SELECTED_OUTLINE = (255, 0, 0)
 
-# Load images
+#Load images we have in the assets folder
 def load_images():
     pieces = {}
     piece_names = ['pawn', 'rook', 'knight', 'bishop', 'queen', 'king']
@@ -27,21 +27,21 @@ def load_images():
             pieces[f"{color}_{piece}"] = pygame.image.load(path)
     return pieces
 
-# Draw the chessboard
+#Draw the chessboard
 def draw_board(win):
     for row in range(ROWS):
         for col in range(COLS):
             color = WHITE if (row + col) % 2 == 0 else BROWN
             pygame.draw.rect(win, color, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
-# Draw highlight for selected piece with red glow outline
+#Draw highlight for selected piece with red glow outline
 def draw_selected(win, selected):
     if selected:
         row, col = selected
         rect = pygame.Rect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
         pygame.draw.rect(win, HIGHLIGHT_SELECTED_OUTLINE, rect, 4)  # outline only
 
-# Draw the pieces
+#Draw the pieces
 def draw_pieces(win, pieces, board, dragging_piece=None, dragging_pos=(0,0), dragging=False, dragging_from=None):
     for row in range(ROWS):
         for col in range(COLS):
@@ -55,7 +55,7 @@ def draw_pieces(win, pieces, board, dragging_piece=None, dragging_pos=(0,0), dra
         img = pygame.transform.scale(pieces[dragging_piece], (SQUARE_SIZE, SQUARE_SIZE))
         win.blit(img, (dragging_pos[0] - SQUARE_SIZE//2, dragging_pos[1] - SQUARE_SIZE//2))
 
-# Setup starting board state
+#Setup the board with so the pieces are at the correct spots
 def create_board():
     board = [[None for _ in range(COLS)] for _ in range(ROWS)]
     for i in range(8):
@@ -67,69 +67,37 @@ def create_board():
         board[7][i] = f'w_{pieces[i]}'
     return board
 
-# LEGAL move generation (basic)
-def get_valid_moves(board, row, col):
-    moves = []
-    piece = board[row][col]
-    if not piece:
-        return moves
+#Checkmate screen
+#Just a Baic Screen that shows which side won with a return to menu button
+def show_checkmate_screen(win, winner):
+    font = pygame.font.SysFont("arial", 48)
+    text = font.render(f"{winner} Wins by Checkmate!", True, (255, 0, 0))
+    rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
 
-    color = piece[0]  # 'w' or 'b'
-    name = piece[2:]  # e.g., 'pawn'
+    button_font = pygame.font.SysFont("arial", 30)
+    btn_text = button_font.render("Return to Menu", True, (255, 255, 255))
+    btn_rect = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 60, 200, 50)
 
-    def is_enemy(r, c):
-        return 0 <= r < ROWS and 0 <= c < COLS and board[r][c] and board[r][c][0] != color
+    running = True
+    while running:
+        win.fill((0, 0, 0))
+        win.blit(text, rect)
+        pygame.draw.rect(win, (100, 100, 100), btn_rect, border_radius=10)
+        win.blit(btn_text, btn_text.get_rect(center=btn_rect.center))
+        pygame.display.flip()
 
-    def is_empty(r, c):
-        return 0 <= r < ROWS and 0 <= c < COLS and board[r][c] is None
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if btn_rect.collidepoint(event.pos):
+                    pygame.quit()
+                    subprocess.Popen([sys.executable, "main_menu.py"])
+                    sys.exit()
 
-    directions = {
-        'rook':   [(-1,0), (1,0), (0,-1), (0,1)],
-        'bishop': [(-1,-1), (-1,1), (1,-1), (1,1)],
-        'queen':  [(-1,0), (1,0), (0,-1), (0,1), (-1,-1), (-1,1), (1,-1), (1,1)],
-        'king':   [(-1,0), (1,0), (0,-1), (0,1), (-1,-1), (-1,1), (1,-1), (1,1)]
-    }
 
-    if name == 'pawn':
-        direction = -1 if color == 'w' else 1
-        if is_empty(row + direction, col):
-            moves.append((row + direction, col))
-            if (color == 'w' and row == 6 or color == 'b' and row == 1) and is_empty(row + 2 * direction, col):
-                moves.append((row + 2 * direction, col))
-        for dc in [-1, 1]:
-            if is_enemy(row + direction, col + dc):
-                moves.append((row + direction, col + dc))
-
-    elif name == 'knight':
-        knight_moves = [(-2,-1), (-2,1), (-1,-2), (-1,2), (1,-2), (1,2), (2,-1), (2,1)]
-        for dr, dc in knight_moves:
-            r, c = row + dr, col + dc
-            if 0 <= r < ROWS and 0 <= c < COLS and (is_empty(r, c) or is_enemy(r, c)):
-                moves.append((r, c))
-
-    elif name in ['rook', 'bishop', 'queen']:
-        for dr, dc in directions[name]:
-            r, c = row + dr, col + dc
-            while 0 <= r < ROWS and 0 <= c < COLS:
-                if is_empty(r, c):
-                    moves.append((r, c))
-                elif is_enemy(r, c):
-                    moves.append((r, c))
-                    break
-                else:
-                    break
-                r += dr
-                c += dc
-
-    elif name == 'king':
-        for dr, dc in directions['king']:
-            r, c = row + dr, col + dc
-            if 0 <= r < ROWS and 0 <= c < COLS and (is_empty(r, c) or is_enemy(r, c)):
-                moves.append((r, c))
-
-    return moves
-
-# Main function
+#Main function
 def main():
     win = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Chess")
@@ -169,7 +137,7 @@ def main():
                     dragging = False
                     dragging_piece = None
                     dragging_from = None
-                    selected_square = None  # Clear highlight after move
+                    selected_square = None  # Clear highlight glow after a move has been made
 
             elif event.type == pygame.MOUSEMOTION:
                 if dragging:
