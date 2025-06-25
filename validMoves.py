@@ -1,9 +1,8 @@
 import copy
 
 # short for "valid moves without check"
-# is like valid_moves(), but does not call is_in_check() recursively
-# recursive is when "a function calls itself to solve a problem, breaking it down into smaller, manageable subproblems"
-# wow such fancy wording
+# is used to define all valid moves for all the different pieces
+# does not check for checkmate, etc. (this will be done later)
 def vmwc(piece, col, row, board):
     moves = [] # list for storing legal moves
     color, kind = piece.split('_') # splits the name of the piece into color and kind
@@ -20,7 +19,7 @@ def vmwc(piece, col, row, board):
         # Movement (1 slot forward if its empty). checks if square_in_grid to avoid indexing errors
         if square_in_grid(col, row + direction) and board[row + direction][col] is None:
             moves.append((col, row + direction))
-            # Ability to move 2 slots first time (checks if start_row and if next anf second next slots are empty)
+            # Ability to move 2 slots first time (checks if start_row and if next and second next slots are empty)
             if row == start_row and board[row + 2 * direction][col] is None:
                     moves.append((col, row + 2 * direction))
 
@@ -30,7 +29,7 @@ def vmwc(piece, col, row, board):
             new_row = row + direction
             if square_in_grid(new_col, new_row): # must not be out of bounds, so on the grid
                 target = board[new_row][new_col]
-                if target and target[0] != color: # check if same color or not, so we cant capture own pieces
+                if target and target[0] != color: # check if same color or not, so we can't capture our own pieces
                     moves.append((new_col, new_row))
 
 
@@ -39,10 +38,10 @@ def vmwc(piece, col, row, board):
         possible_moves = [
             (1, 2), (2, 1), (2, -1), (1, -2),
             (-1, -2), (-2, -1), (-2, 1), (-1, 2)
-        ] # row and column offset from current pos (the deltas are L shaped here)
+        ] # row and column offset from current pos (the deltas are L-shaped here)
         for dx, dy in possible_moves:
             new_col, new_row = col + dx, row + dy
-            # Check if new pos is a valid slot, if so then set target
+            # Check if new pos is a valid slot, if so, then set target
             if square_in_grid(new_row, new_col):
                 target = board[new_col][new_row]
                 if target is None or target[0] != color:
@@ -63,8 +62,8 @@ def vmwc(piece, col, row, board):
                     moves.append((new_col, new_row))
 
 
-    # rook, bishop and queen valid moves
-    # valid moves for queen is just valid moves for rook + bishop
+    # rook, bishop, and queen valid moves
+    # valid moves for queen are just valid moves for rook + bishop
     # condensed to save lines of code
     elif kind in ['rook', 'bishop', 'queen']:
         directions = []
@@ -99,7 +98,7 @@ def would_cause_check(piece, col, row, move, board):
     simulated_board[new_col][new_row] = piece
     color, _ = piece.split('_')
 
-    # find the kings position
+    # find the king's position
     king_pos = None # set it to none by default
     for r in range(8):
         for c in range(8):
@@ -162,7 +161,7 @@ def in_check(board, color):
 
 # short for checkmate or stalemate
 def cm_or_sm(board, color):
-    # if there's no legal moves for any piece
+    # if there are no legal moves for any piece
     for row in range(8):
         for col in range(8):
             piece = board[row][col]
