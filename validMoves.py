@@ -171,5 +171,7 @@ def cm_or_sm(board, color):
 
     if in_check(color, board):
         return "checkmate"
+        print("Checkmate!")
     else:
         return "stalemate"
+        print("Stalemate!")
